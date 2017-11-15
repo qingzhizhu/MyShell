@@ -1,0 +1,85 @@
+#o/bin/bash
+
+env
+
+
+
+echo "----------"
+
+regexp="#[0-9]\+"
+
+grep_msg()
+{
+	grepped=$( echo $message | grep -i $regexp )
+}
+
+process_revision ()
+{
+  revisions=$(git rev-list $old_revision..$new_revision)
+  echo $revisions
+  IFS='\n' read -ra array <<< "$revisions"
+  for rid in "${!array[@]}"; do 
+	revision=${array[rid]}
+	echo "revision=$revision"
+    message=$(git cat-file commit $revision | sed '1,/^$/d')
+	echo "message=$message"
+#	grepped=$(echo $message | grep -i "#[0-9]\+")
+    grep_msg()
+#	echo "glhrepped=$grepped"
+    if [ -z "$grepped" ] ; then
+
+		grepped_none=$(echo $message | grep -i "#none")
+		echo "grepped_none=$grepped_none"
+		if [ -n "$grepped_none" ] ; then
+			echo "Warning, you are committing without a ticket reference" >&1
+		else
+			echo "You have not included a ticket reference" >&2
+			exit 1
+		fi
+    fi
+  done
+
+
+}
+
+while read old_revision new_revision refname ; do
+  echo $old_revision
+	echo $new_revision 
+	process_revision
+
+
+done
+
+
+echo "-----------"
+git show de02631dc3684788f0334829691da2b38b08e2cf --stat
+
+echo $OLD_REVISION
+echo "new=$NEW_REVISION"
+REVISIONS=$(git rev-list $OLD_REVISION..$NEW_REVISION)
+echo $REVISIONS
+
+
+
+echo "num=$#"
+echo $0
+echo $1
+for i in ${*}; do
+	echo "i=$i"
+done
+
+
+echo "当前提交用户:$GIT_AUTHOR_NAME"
+change=$(git rev-list --objects $OLD_VALUE...$NEW_VALUE | egrep '\.(jsp|vm|java)$' | awk '{print $2}' | sort | uniq )
+echo "change=$change"
+#DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#sh $DIR/../git_prepare-commit-msg.sh
+
+
+#git status
+
+
+
+echo "don't commit from server!"
+
+exit 1
