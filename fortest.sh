@@ -71,3 +71,64 @@ elif [[ $message =~ "Conflicts" ]]; then
 	echo "这是一个冲突提交，不检查，下一条"
 fi
 
+
+
+USER_MASTER_NUM=-1
+echo "$USER_MASTER_NUM"
+let USER_MASTER_NUM=$USER_MASTER_NUM+1
+echo "$USER_MASTER_NUM"
+let USER_MASTER_NUM=$USER_MASTER_NUM+1
+echo "$USER_MASTER_NUM"
+
+
+echo "------------"
+
+
+
+echo "字典操作"
+#master
+USER_NUM=0
+USER_ARR=("gengkun" "master" "耿坤" "AA")
+USER_ARR_PATH=(".")
+DIC_USER=([$USER_NUM]=${USER_ARR[*]})
+DIC_PATH=([$USER_NUM]=${USER_ARR_PATH[*]})
+
+echo ${!DIC_USER[*]}
+echo ${DIC_USER[*]}
+echo "------------"
+
+#开发权限
+let USER_NUM=$USER_NUM+1
+USER_ARR=("dev" "dev1" "dev2" "dev3")
+USER_ARR_PATH=("b" "dev" "art")
+DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
+DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
+echo ${!DIC_USER[*]}
+echo ${DIC_USER[*]}
+echo "------------"
+
+
+#开发权限
+let USER_NUM=$USER_NUM+1
+USER_ARR=("art" "art1" "art2" "art3")
+USER_ARR_PATH=("art", "ART2")
+DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
+DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
+echo ${!DIC_USER[*]}
+echo ${DIC_USER[*]}
+echo "------------"
+
+
+echo "遍历字典"
+
+for key in $(echo ${!DIC_USER[*]})
+do
+    echo $key":"${DIC_USER[key]}
+done
+
+echo "遍历字典PATH"
+for key in $(echo ${!DIC_PATH[*]})
+do
+    echo $key":"${DIC_PATH[key]}
+done
+

@@ -5,8 +5,8 @@
 #echo "*** Run time: $(date) @ $(hostname)"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-echo "DIR=$DIR"
-echo "当前提交用户:$GIT_AUTHOR_NAME"
+#echo "DIR=$DIR"
+#echo "当前提交用户:$GIT_AUTHOR_NAME"
 
 
 
@@ -16,15 +16,17 @@ change=`git status -s`
 echo "change=$change" #todo优化路径
 
 
-#master
+#master 开发全是
 USER_MASTER_NUM=0
 USER_MASTER=("gengkun" "master" "耿坤" "AA")
 USER_MASTER_PATH=(".")
 
-#开发权限
-USER_DEV_NUM=1
-USER_DEV=("dev" "dev1" "dev2" "dev3")
-USER_DEV_PATH=("b" "dev" "art")
+#let USER_MASTER_NUM=$USER_MASTER_NUM+1
+#策划权限
+
+USER_PLAN_NUM=1
+USER_PLAN=("dev" "dev1" "dev2" "dev3")
+USER_PLAN_PATH=("")
 
 #美术权限
 USER_ART_NUM=2
@@ -32,11 +34,11 @@ USER_ART=("art" "art1" "art2")
 USER_ART_PATH=("a" "art")
 
 
-#echo ${USER_DEV[*]}
+#echo ${USER_PLAN[*]}
 
 #declare -A DIC_USER
-DIC_USER=([$USER_MASTER_NUM]=${USER_MASTER[*]}, [$USER_DEV_NUM]=${USER_DEV[*]}, [$USER_ART_NUM]=${USER_ART[*]})
-DIC_PATH=([$USER_MASTER_NUM]=${USER_MASTER_PATH[*]}, [$USER_DEV_NUM]=${USER_DEV_PATH[*]}, [$USER_ART_NUM]=${USER_ART_PATH[*]})
+DIC_USER=([$USER_MASTER_NUM]=${USER_MASTER[*]}, [$USER_PLAN_NUM]=${USER_PLAN[*]}, [$USER_ART_NUM]=${USER_ART[*]})
+DIC_PATH=([$USER_MASTER_NUM]=${USER_MASTER_PATH[*]}, [$USER_PLAN_NUM]=${USER_PLAN_PATH[*]}, [$USER_ART_NUM]=${USER_ART_PATH[*]})
 
 #遍历key值
 #$GIT_AUTHOR_NAME
