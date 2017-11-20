@@ -21,6 +21,8 @@ art/art.txt | 1 +
  # stat=( `cat /proc/$$/testStr` )
  # echo "stat=$stat"
 
+#测试
+testStr=""
 
 changePath=""
 testStr=`echo $testStr | sed 's/^\/ //' `
@@ -131,4 +133,89 @@ for key in $(echo ${!DIC_PATH[*]})
 do
     echo $key":"${DIC_PATH[key]}
 done
+
+
+
+ 
+
+#用法：
+
+s="{\"rv\":0,\"flag\":1,\"url\":\"http://www.jinhill.com\",\"msg\":\"test\"}"  
+parse_json(){  
+	#echo "$1" | sed "s/\(.*\)$2\":[^,}]*\(.*\)/\1/"
+	#echo "${1//\"/}" | sed "s/\(.*\)$2:\[^,}]*\(.*\)/\1/"
+	echo "${1//\"/}" | sed "s/\(.*\)$2:[^,}]\(.*\)/\d/" 
+	#echo  $1 		 | sed 's/.*"url" :\([^,}]*\).*/\1/'
+}  
+echo $s 
+echo "----" 
+value=$(parse_json $s "url")  
+echo $value  
+
+
+
+
+
+function get_json_value()
+{
+  local json=$1
+  local key=$2
+  #echo "json=$json"
+  if [[ -z "$3" ]]; then
+    local num=1
+  else
+    local num=$3
+  fi
+  local value=$(echo "${json}" | awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'${key}'\042/){print $(i+1)}}}' | tr -d '"' | sed -n ${num}p)
+  echo ${value}
+}
+
+#get_json_value $(curl -s http://ip.taobao.com/service/getIpInfo.php?ip=myip) ip
+
+author="gengkun1"
+author_id=`get_json_value $(curl -s http://10.1.3.38/api/v4/users?username=${author}) id`
+if [[ $author_id == "" ]]; then
+	echo "非法用户"
+fi
+echo "author_id=$author_id"
+
+
+str='[{"key":"path","value":"\"dir_1\" \"dir_2 a/art\" \"a/art/newdir\"","protected":false}]'
+
+str='[{"key":"path","value":"aa","protected":false}]'
+#'[{"key":"path","vaaalue":"a;art;BattleServer;  Gds;  Hypersync;Proto;Tools;Client/Unity/Assets/CustomAssets;","protected":false}]'
+echo "str=$str"
+echo "-====="
+str=`echo $str | sed s/[[:space:]]//g`
+echo "先去调空格str=$str"
+value=`get_json_value $str value`
+echo "value=$value"
+
+OLDIFS=$IFS
+echo "IFS=$IFS@@@"
+IFS=";"
+for i in $value; do
+	echo "i=$i"
+done
+IFS=$OLDIFS
+
+
+
+
+testStr=".gitignore                                         |   7 ++++++-\n
+aaa\n
+parent:11\n
+aa\n
+a parent:22\n
+"
+echo $testStr |grep -a "parent"
+echo "==="
+COUNT=$(echo $testStr |grep -a "parent" |wc -l) 
+echo "parent出现的次数$COUNT"
+
+#grep -o 'select' $testStr |wc -l
+#awk -v RS="@#$j" '{print gsub(/parent/,"&")}' < $testStr
+COUNT=$testStr | grep "parent" -c
+echo "字符串必须换行才能输出..次数:$COUNT"
+
 

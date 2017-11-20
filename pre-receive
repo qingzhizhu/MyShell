@@ -1,128 +1,184 @@
 #!/bin/bash
 #echo "*** Template Shell Script ***"
-#echo "Desc : git hook 客户端提交检查"
+#echo "Desc : git hook 服务端提交检查"
+#echo "我们假设gitlab上已Push上的全是有权限的用户推上去的"
+#echo "基于gitlab实现，根据提交的用户名，从gitlab上找到用户组权限。"
+#echo "在gitlab上添加子分组，和权限设置，可视化操作"
 #echo "Author : gengkun123@gmail.com"
 #echo "*** Run time: $(date) @ $(hostname)"
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 #echo "DIR=$DIR"
-#echo "当前提交用户:$GIT_AUTHOR_NAME"
+
+#env
+
+#GL_HOST="localhost"
+GL_HOST="http://10.1.3.38"
+#echo "host=$GL_HOST"
+
+#对应项目的子组id
+#TODO:通过项目名称，找到所属子组的ids
+#$GL_HOST/api/v4/groups
 
 
-#echo "DIR=$DIR"
-#exit 0
+#gengkun/test 43组 44和45是43的子组
+#GROUP_ARR=(43 44 45)
 
+#Demo 51组 52master子组 53dev子组 54art子组
+#GROUP_ARR=(52 53 54)
 
-#用户名后缀_art表示都是美术组，_plan 策划组, _front 前端程序组， _server 后端程序组
-USER_NUM=-1
+#cod: master front server plan art
+GROUP_ARR=(48 46 47 49 50)
 
-#master
-let USER_NUM=$USER_NUM+1
-USER_ARR=("masterAA" "gengkun" "李思亮" "耿坤")
-USER_ARR_PATH=(".")
-DIC_USER=([$USER_NUM]=${USER_ARR[*]})
-DIC_PATH=([$USER_NUM]=${USER_ARR_PATH[*]})
-
-#前端开发
-let USER_NUM=$USER_NUM+1
-USER_ARR=("front")
-USER_ARR_PATH=("a" "art" "BattleServer" "Gds" "Hypersync" "Proto" "Tools" "Client/Unity/Assets/CustomAssets")
-DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
-DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
+author_name=$GL_USERNAME
 
 
 
-# for key in $(echo ${!DIC_USER[*]})
-# do
-#     echo $key":"${DIC_USER[key]}
-# done
+function get_json_value()
+{
+  local json=$1
+  local key=$2
+  if [[ -z "$3" ]]; then
+    local num=1
+  else
+    local num=$3
+  fi
+  local value=$(echo "$json" | awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'$key'\042/){print $(i+1)}}}' | tr -d '"' | sed -n ${num}p)
+  echo $value
+}
 
-# for key in $(echo ${!DIC_PATH[*]})
-# do
-#     echo $key":"${DIC_PATH[key]}
-# done
-
-#后端开发
-let USER_NUM=$USER_NUM+1
-USER_ARR=("server")
-USER_ARR_PATH=("Server" "Proto" "Gds")
-DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
-DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
-
-#美术组
-let USER_NUM=$USER_NUM+1
-USER_ARR=("art")
-USER_ARR_PATH=("Client/Unity/Assets/CustomAssets/Arts")
-DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
-DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
-
-#策划组
-let USER_NUM=$USER_NUM+1
-USER_ARR=("plan")
-USER_ARR_PATH=("Gds")
-DIC_USER+=([$USER_NUM]=${USER_ARR[*]})
-DIC_PATH+=([$USER_NUM]=${USER_ARR_PATH[*]})
 
 
 #echo "----------"
 
-process_revision ()
+function process_revision ()
 {
-  #echo "----------process_revision start"
+  #echo "-----process_revision---statr----"
+  json_key="id"
+  author_id=`get_json_value $(curl -s $GL_HOST/api/v4/users?username=$author_name) $json_key`
+
+  if [[ $author_id == "" ]]; then
+    echo "非法用户name=$author_name;id=$author_id"
+    exit 1
+  fi
+  echo "当前提交用户:$author_name,用户id=$author_id"
+
+  author_group_id=-1
+
+
+  for i in ${GROUP_ARR[@]}; do
+    group_id=$i
+    ##echo "group_id=$group_id"
+    str=$(curl -s --header "PRIVATE-TOKEN: hkFAgEky2MCbGFqMPzGG" $GL_HOST/api/v4/groups/$group_id/members/$author_id)    
+    ##echo "str=$str"
+    tmp_author_id=-1
+    if [[ $str =~ $json_key ]]; then
+      tmp_author_id=`get_json_value $str $json_key`
+    fi
+
+    #echo "tmp_author_id=$tmp_author_id"
+    if [[ $tmp_author_id != $author_id ]]; then
+      #echo "非组中用户 $tmp_author_id"
+      continue
+    fi
+    author_group_id=$group_id
+
+    #echo "group_id=$group_id"
+    
+    str=$(curl -s --header "PRIVATE-TOKEN: hkFAgEky2MCbGFqMPzGG" $GL_HOST/api/v4/groups/$group_id/variables)
+    #echo "组可写目录:str=$str"
+    str="\'$str\'" #转义一下 去空格
+    str=`echo $str | sed s/[[:space:]]//g`     
+    json_key="value"
+    #echo "get_json_value $str $json_key"
+    USER_PATH=`get_json_value $str $json_key`
+    echo "USER_PATH=$USER_PATH"
+    if [[ $USER_PATH == "" ]]; then
+      echo -e "用户$author_name,用户id:$author_id,所属组:$author_group_id,\n没有设置可写路径！请联系管理员！"
+      exit 1
+    fi
+    ##echo "组可写目录:USER_PATH=$USER_PATH"
+
+    if [[ $USER_PATH == "." || $USER_PATH == "/" ]]; then
+      echo "you are master！can push"
+      exit 0
+      #test
+      #exit 1
+    fi
+
+    #TODO:多用户组判断？
+    # if [[ $author_group_id != -1 ]]; then
+    #   break
+    # fi
+    break
+  done
+
+  if [[ $author_group_id == -1 ]]; then
+    echo "当前提交用户:$author_name, 你不在任何写权限组，请联系管理员"
+    exit 1
+  fi
+
+  #echo "----------process_revision commit list "
   revisions=$(git rev-list $old_revision..$new_revision)
   #echo "revisions=$revisions@@"
-  
+
 
   changePath=""
-  author=""
+
   for revision in ${revisions[@]}; do
     #echo "revision=$revision"
-    message=$(git cat-file commit $revision | sed '1,/^$/d')
-    #echo "message=$message"
-    if [[ $message =~ "Merge" ]]; then
-      #echo "这是一个merge提交，不检查，下一条"
+
+    parent_num=$(git cat-file -p $revision | grep -c "parent")
+    ##echo "parent_num=$parent_num"
+
+    if [[ $parent_num == 2 ]]; then
+      #echo "Merge continue"
       continue
-    elif [[ $message =~ "Conflicts" ]]; then
-      echo "这是一个冲突提交，不检查，下一条"
+    elif [[ $parent_num == 0 ]]; then
+      echo "new branch"
+      continue
+    elif [[ $parent_num != 1 ]]; then
+        echo "parent_num=$parent_num;what?? revision=$revision"
     fi
 
 
-
     changePath=""
-    author=$(git show $revision --pretty=format:'%an' | sed q)
-    echo "记录作者：$author"
+
     change=$( git show $revision --stat | sed '1,/^$/d' | sed '1,/^$/d; $d' )
-    echo -e "change=$change\n===="
+    ##echo -e "change=$change\n===="
 
     #一次提交记录检查------
     for i in $change; do
       #判断是否有... 冲突
       if [[ $i =~ "..." ]]; then
-        isGuest=0
         echo "冲突提交，包含...不用检查此提交记录:$i"
         changePath=""
         break
-      
-      #判断是否重命名操作{ }
+
+        #判断是否重命名操作{ }
       elif [[ $i =~ "{" || $i =~ "}" ]]; then
-        isGuest=0
         echo "重命名提交，包含大括号，不用检查此提交记录:$i"
         changePath=""
         break
-      
-      
-      #判断是否有 / 
+
+
+        #判断是否有 /
       elif [[ $i =~ "/" ]]; then
         #echo "普通提交,包含斜杠:$i"
         #changePath=("${changePath[@]}" "${i%/*}")
         tempPath="${i%/*} "
         if [[ $changePath =~ $tempPath ]]; then
-          echo "changePath包含tempPath;@$changePath;$tempPath@"
+          #echo "changePath包含tempPath;@$changePath;$tempPath@"
           continue
         fi
-        changePath="${changePath}$tempPath"
-        echo "@@$changePath"
-      #是否是个根目录下的文件
+        changePath="$changePath$tempPath"
+        #echo "@@$changePath"
+
+      #是否是个根目录下的文件, TODO 无后缀咋办
+      elif [[ $i =~ "." ]]; then
+
+        echo "Error: $author_name没权限在!根!目录下提交文件权限"
+        exit 1
 
       else
         #echo "其他字符：$i"
@@ -131,94 +187,51 @@ process_revision ()
     done
     #一次提交记录检查完毕------
 
-    #检查是否在用户的权限文件夹中
     if [[ $changePath == "" ]]; then
       continue
     fi
 
-
-    
-    
-   
     #============changepath enable ===========
-    TMP_GIT_AUTHOR=$author
-    #后缀_art表示都是美术组，_plan 策划组, _front 前端程序组， _server 后端程序组
-    
-    tmpAuthor=${TMP_GIT_AUTHOR#*_}
-    #echo "tmpAuthor=$tmpAuthor"
-    if [[  $tmpAuthor == "art" ]]; then
-      TMP_GIT_AUTHOR="art"
-    elif [[  $tmpAuthor == "plan" ]]; then
-      TMP_GIT_AUTHOR="plan"
-    elif [[  $tmpAuthor == "front" ]]; then
-      TMP_GIT_AUTHOR="front"
-    elif [[ $tmpAuthor == "server" ]]; then
-      TMP_GIT_AUTHOR="server"
-    fi
 
-    echo "最终用户:$TMP_GIT_AUTHOR"
+    #change=$changePath
 
-    change=$changePath
-    needCheck=0
-    isGuest=1
-    for key in $(echo ${!DIC_USER[*]})
-    do
-        echo "$key : ${DIC_USER[$key]}"
-        arr=${DIC_USER[$key]}
-        if echo "${arr[@]}" | grep -w "$TMP_GIT_AUTHOR" &>/dev/null; then
-          isGuest=0
-        
-        userPath=${DIC_PATH[$key]}
-        #echo "userPath=${userPath}"
-        #echo -e "检查是否在用户的权限文件夹中:$changePath -> $userPath"
-        if [[ "${userPath}" == "." || "${userPath}" == ".,"  || "$userPath[0]" == "." ]]; then
-          #echo "you are master,这条记录ok，下一条"
-          isGuest=0
+    #文件检测是否在允许的路径中
+
+    for i in $changePath; do
+      file=$i
+      #echo "fiel=$file"
+      isEnable=1
+      msg=""
+      filepath=$i
+      OLDIFS=$IFS
+      IFS=";"
+      for path in $USER_PATH; do
+        #只要在其中一个就行
+        if [[ $filepath =~ $path  ]]; then
+          #echo "$path is in $filepath"
+          isEnable=1
+          msg=""
           break
-        fi
-          
-
-          #文件检测是否在允许的路径中
-          needCheck=1
-          for i in $change; do
-            file=$i
-            echo "fiel=$file"
-            isEnable=1
-            msg=""
-            filepath=$i
-            for path in $userPath; do
-              #只要在其中一个就行
-              if [[ $filepath =~ $path  ]]; then
-                echo "$path is in $filepath"
-                isEnable=1
-                msg=""
-                break
-              else
-                msg="$msg\n$file not in $path"
-                isEnable=0
-              fi
-            done
-
-            if [[ $isEnable == 0 ]]; then
-              echo -e "Error!!! don't commit!!! \nYou can Access dir are : ${userPath} $msg"
-              exit 1
-            fi
-            
-
-
-          done
-
-          
-          break;
         else
-          :
-
-
+          #msg="$msg\n$file not in $path"
+          if [[ $msg == "" ]]; then
+            msg="$msg\n$change !!"
+          fi
+          
+          isEnable=0
         fi
-            
+      done
+      IFS=$OLDIFS
+
+      if [[ $isEnable == 0 ]]; then
+        #echo -e "Error!!! don't commit!!! \nYou can Access dir are : ${USER_PATH} $msg"
+        echo "--------------------------------------"
+        echo -e "Error!! 提交用户$author_name可写的目录是:$USER_PATH \n以下文件不可提交: $msg"
+        echo "--------------------------------------"
+        exit 1
+      fi
+
     done
-
-
 
   done
 
@@ -226,10 +239,15 @@ process_revision ()
 
 }
 
-isGuest=1
+if [[ $author_name == "" ]]; then
+  author_name="gengkun"
+  echo "测试人员用户提交"
+  process_revision
+fi
+
+
 while read old_revision new_revision refname ; do
   if [[ $old_revision == "0000000000000000000000000000000000000000" ]]; then
-    isGuest=0
     echo "new branch!"
     exit 0
   fi
@@ -241,14 +259,7 @@ done
 
 #echo "-----------"
 
-if [[ $isGuest == 1 ]]; then
-  echo "当前提交用户:$TMP_GIT_AUTHOR"
-  echo "Error: you don't have any Access！"
-  exit 1
-  #默认可访问
-  #exit 0
-fi
 
-echo "You can push!"
+##echo "You can push!"
 
-#exit 1
+exit 0
