@@ -219,3 +219,39 @@ COUNT=$testStr | grep "parent" -c
 echo "字符串必须换行才能输出..次数:$COUNT"
 
 
+
+
+
+change=`cat /Users/kevin/elex/cod/cod_project/log.txt | sed 's/ //g'`
+
+for i in $change; do
+        #判断是否有 /
+        echo "普通提交,包含斜杠:$i"
+      if [[ $i =~ "/" ]]; then
+        #echo "普通提交,包含斜杠:$i"
+        #changePath=("${changePath[@]}" "${i%/*}")
+        tempPath="${i%/*} "
+        if [[ $changePath =~ $tempPath ]]; then
+          #echo "changePath包含tempPath;@$changePath;$tempPath@"
+          continue
+        fi
+        changePath="$changePath$tempPath"
+        #echo "@@$changePath"
+
+      #是否是个根目录下的文件, TODO 看需求是否禁用不包含.的跟目录文件
+      #else
+      elif [[ $i =~ "." ]]; then
+
+        echo "Error: $author_name没权限在!根!目录下提交文件权限"
+        exit 1
+
+      else
+        echo "其他字符：$i"
+        :
+      fi
+    done
+
+echo "你可以提交了"
+
+
+

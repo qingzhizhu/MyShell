@@ -144,8 +144,8 @@ function process_revision ()
 
     changePath=""
 
-    #stat 会将比较深的路径变成.../dir/dir1/dir2/a.txt 用name-only 是全路径,而且也没用|+-等符号
-    change=$( git show $revision --name-only | sed '1,/^$/d' | sed '1,/^$/d' )
+    #stat 会将比较深的路径变成.../dir/dir1/dir2/a.txt 用name-only 是全路径,而且也没用|+-等符号, 去掉文件名中的空格
+    change=$( git show $revision --name-only | sed '1,/^$/d' | sed '1,/^$/d' | sed 's/ //g')
     ##echo -e "change=$change\n===="
 
     #一次提交记录检查------
