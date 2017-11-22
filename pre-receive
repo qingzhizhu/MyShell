@@ -128,19 +128,28 @@ function process_revision ()
   for revision in ${revisions[@]}; do
     #echo "revision=$revision"
 
-    parent_num=$(git cat-file -p $revision | grep -c "parent")
-    ##echo "parent_num=$parent_num"
+    # parent_num=$(git cat-file -p $revision | grep -c "parent")
+    # echo "parent_num=$parent_num"
 
-    if [[ $parent_num == 2 ]]; then
-      #echo "Merge continue"
+    # if [[ $parent_num == 2 ]]; then
+    #   echo "Merge continue忽略"
+    #   continue
+    # elif [[ $parent_num == 0 ]]; then
+    #   echo "new branch"
+    #   continue
+    # elif [[ $parent_num != 1 ]]; then
+    #     echo "parent_num=$parent_num;what?? revision=$revision"
+    # fi
+
+    #是否已经提交过
+    isCommited=$(git branch --contains $revision)
+    echo "isCommited=$isCommited"
+    if [[ $isCommited != "" ]]; then
+      #echo "此交记录提交过"
       continue
-    elif [[ $parent_num == 0 ]]; then
-      echo "new branch"
-      continue
-    elif [[ $parent_num != 1 ]]; then
-        echo "parent_num=$parent_num;what?? revision=$revision"
     fi
 
+    #TODO:判断cherry-pick author  committer 不相等就是cherry-pick
 
     changePath=""
 
@@ -166,7 +175,7 @@ function process_revision ()
       #else
       elif [[ $i =~ "." ]]; then
 
-        echo "Error: $author_name没权限在!根!目录下提交文件权限"
+        echo -e "Error: $author_name没权限在!根!目录下提交文件权限\n$i!!"
         exit 1
 
       else
