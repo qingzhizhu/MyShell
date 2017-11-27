@@ -174,7 +174,10 @@ function process_revision ()
       #是否是个根目录下的文件, TODO 看需求是否禁用不包含.的跟目录文件
       #else
       elif [[ $i =~ "." ]]; then
-
+        #不检查根目录的.gitignore
+        if [[ $i =~ ".gitignore" ]]; then
+          continue
+        fi
         echo -e "Error: $author_name没权限在!根!目录下提交文件权限\n$i!!"
         exit 1
 
