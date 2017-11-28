@@ -216,7 +216,7 @@ function process_revision ()
         else
           #msg="$msg\n$file not in $path"
           if [[ $msg == "" ]]; then
-            msg="$msg\n$change !!"
+            msg="$msg\n$filepath !!"
           fi
           
           isEnable=0
@@ -227,7 +227,7 @@ function process_revision ()
       if [[ $isEnable == 0 ]]; then
         #echo -e "Error!!! don't commit!!! \nYou can Access dir are : ${USER_PATH} $msg"
         echo "--------------------------------------"
-        echo -e "Error!! 提交用户$author_name可写的目录是:$USER_PATH \n以下文件不可提交: $msg"
+        echo -e "Error!! 提交用户$author_name可写的目录是:$USER_PATH \n以下文件夹不可提交: $msg"
         echo "--------------------------------------"
         exit 1
       fi
