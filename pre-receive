@@ -128,18 +128,18 @@ function process_revision ()
   for revision in ${revisions[@]}; do
     #echo "revision=$revision"
 
-    # parent_num=$(git cat-file -p $revision | grep -c "parent")
-    # echo "parent_num=$parent_num"
+    parent_num=$(git cat-file -p $revision | grep -c "parent")
+    echo "parent_num=$parent_num"
 
-    # if [[ $parent_num == 2 ]]; then
-    #   echo "Merge continue忽略"
-    #   continue
-    # elif [[ $parent_num == 0 ]]; then
-    #   echo "new branch"
-    #   continue
-    # elif [[ $parent_num != 1 ]]; then
-    #     echo "parent_num=$parent_num;what?? revision=$revision"
-    # fi
+    if [[ $parent_num == 2 ]]; then
+      echo "Merge continue忽略"
+      continue
+    elif [[ $parent_num == 0 ]]; then
+      echo "new branch"
+      continue
+    elif [[ $parent_num != 1 ]]; then
+        echo "parent_num=$parent_num;what?? revision=$revision"
+    fi
 
     #是否已经提交过
     isCommited=$(git branch --contains $revision)
