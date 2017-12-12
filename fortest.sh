@@ -243,7 +243,8 @@ for i in $change; do
       elif [[ $i =~ "." ]]; then
 
         echo "Error: $author_name没权限在!根!目录下提交文件权限"
-        exit 1
+        break
+        #exit 1
 
       else
         echo "其他字符：$i"
@@ -253,5 +254,8 @@ for i in $change; do
 
 echo "你可以提交了"
 
-
+str=".gitignore"
+if [[ $str =~ ".gitignore" ]]; then
+  echo "包含啊"
+fi
 
