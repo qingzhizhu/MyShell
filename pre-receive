@@ -49,10 +49,16 @@ function get_json_value()
 
 
 #echo "----------"
-
+#迭代分支，不允许提交cs文件，只能merge过去
+isIterationBr=0
 function process_revision ()
 {
+
   #echo "-----process_revision---statr----"
+  if [[ $refname == "refs/heads/feature/OnlineIteration" ]]; then
+    isIterationBr=1
+    echo "迭代分支，不允许提交cs文件，只能merge过去"
+  fi
   json_key="id"
   author_id=`get_json_value $(curl -s $GL_HOST/api/v4/users?username=$author_name) $json_key`
 
@@ -99,10 +105,12 @@ function process_revision ()
     ##echo "组可写目录:USER_PATH=$USER_PATH"
 
     if [[ $USER_PATH == "." || $USER_PATH == "/" ]]; then
-      echo "you are master！can push"
-      exit 0
-      #test
-      #exit 1
+      if [[ $isIterationBr == 0 ]]; then
+        echo "you are master！can push"
+        exit 0
+        #test
+        #exit 1
+      fi
     fi
 
     #TODO:多用户组判断？
@@ -154,7 +162,13 @@ function process_revision ()
 
     #stat 会将比较深的路径变成.../dir/dir1/dir2/a.txt 用name-only 是全路径,而且也没用|+-等符号, 去掉文件名中的空格
     change=$( git show $revision --name-only | sed '1,/^$/d' | sed '1,/^$/d' | sed 's/ //g')
-    ##echo -e "change=$change\n===="
+    #echo -e "change=$change\n==== $refname"
+
+    #是否是换皮分支，不能提交.cs 文件
+    if [[ $isIterationBr == 1 && $change =~ ".cs" ]]; then
+      echo -e "Error: 这个分之不可以提交.cs文件!!\n$change"
+      exit 1
+    fi
 
     #一次提交记录检查------
     for i in $change; do
@@ -247,6 +261,7 @@ fi
 
 
 while read old_revision new_revision refname ; do
+  #echo "refname:$refname;old_revision=$old_revision;new_revision=$new_revision"
   if [[ $old_revision == "0000000000000000000000000000000000000000" ]]; then
     echo "new branch!"
     exit 0

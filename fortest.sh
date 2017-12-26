@@ -259,3 +259,15 @@ if [[ $str =~ ".gitignore" ]]; then
   echo "包含啊"
 fi
 
+
+str="Client/Unity/Assets/CustomAssets/Resources/LocalFilePath.txt
+Client/Unity/Assets/CustomAssets/Resources/LocalFilePath.txt.meta
+Client/Unity/Assets/CustomAssets/Resources/Prefabs/UI/Features/PveHomeNewView/PveHomeNewView.prefab
+Client/Unity/Assets/CustomAssets/Scripts/Model/ClientSync/Protocols/Commands.cs
+Client/Unity/Assets/CustomAssets/Scripts/Model/ClientSync/Protocols/Models.cs
+Client/Unity/Assets/CustomAssets/Scripts/View/Ui/PveHomeNewView/PveHomeNewView.cs"
+
+if [[ $str =~ ".cs" ]]; then
+  echo "包含.cs 文件啊！"
+fi
+
