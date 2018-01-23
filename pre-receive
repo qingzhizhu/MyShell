@@ -55,7 +55,7 @@ function process_revision ()
 {
 
   #echo "-----process_revision---statr----"
-  if [[ $refname == "refs/heads/feature/OnlineIteration" ]]; then
+  if [[ $refname == "refs/heads/feature/OnlineIteration" || $refname =~ "refs/heads/Future/" ]]; then
     isIterationBr=1
     echo "迭代分支，不允许提交cs文件，只能merge过去"
   fi
@@ -156,7 +156,7 @@ function process_revision ()
       continue
     fi
 
-    #TODO:判断cherry-pick author  committer 不相等就是cherry-pick
+    
 
     changePath=""
 
@@ -164,8 +164,16 @@ function process_revision ()
     change=$( git show $revision --name-only | sed '1,/^$/d' | sed '1,/^$/d' | sed 's/ //g')
     #echo -e "change=$change\n==== $refname"
 
+    #判断cherry-pick author  committer 不相等就是cherry-pick
+    isCherryPick=0
+    committer=$(git show $revision --pretty=format:"%cn")
+    if [[ $committer != $author_name ]]; then
+      echo "cherry-pick 忽略 "
+      isCherryPick=1
+      continue
+    fi
     #是否是换皮分支，不能提交.cs 文件
-    if [[ $isIterationBr == 1 && $change =~ ".cs" ]]; then
+    if [[ $isCherryPick == 0 && $isIterationBr == 1 && $change =~ ".cs" ]]; then
       echo -e "Error: 这个分之不可以提交.cs文件!!\n$change"
       exit 1
     fi
