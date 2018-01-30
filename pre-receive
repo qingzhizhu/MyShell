@@ -166,9 +166,11 @@ function process_revision ()
 
     #判断cherry-pick author  committer 不相等就是cherry-pick
     isCherryPick=0
-    committer=$(git show $revision --pretty=format:"%cn")
-    if [[ $committer != $author_name ]]; then
-      echo "cherry-pick 忽略 "
+    committer=$(git show $revision --pretty=format:"%an;%cn")
+    an=${committer%%;*}
+    cn=${committer##*;}
+    if [[ $an != $cn ]]; then
+      echo "cherry-pick 忽略 $revision; an=$an; cn=$cn"
       isCherryPick=1
       continue
     fi
