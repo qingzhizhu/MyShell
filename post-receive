@@ -1,0 +1,32 @@
+#!/bin/bash
+#echo "*** Template Shell Script ***"
+#echo "Desc : git hook 服务端"
+#echo "Author : gengkun123@gmail.com"
+#echo "*** Run time: $(date) @ $(hostname)"
+#stty -echo
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#echo "DIR=$DIR"
+#whoami
+
+
+
+function process_revision ()
+{
+
+	if [[ $refname == "refs/heads/develop" ]]; then
+		curl -s -u autobuilder:1 http://ip:8080/view/AUTO_BUILD/job/AUTO_BUILD_MERGE/build\?token\=token
+	fi
+}
+
+while read old_revision new_revision refname ; do
+  #echo "refname:$refname;old_revision=$old_revision;new_revision=$new_revision"
+  if [[ $old_revision == "0000000000000000000000000000000000000000" ]]; then
+    #echo "new branch!"
+    exit 0
+  fi
+  #echo "old_revision=$old_revision"
+  #echo "new_revision=$new_revision"
+  process_revision
+done
+
+echo "Done!"
