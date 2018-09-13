@@ -10,13 +10,16 @@ def get_message():
                 print "Usage:%s context." % sys.argv[0]
         else:
                 context = sys.argv[1]
+                context = "\n".join(context.split("\\n"))
+                #print("@@%s@@" % context)
         return context
 #处理消息
 def do_message(context):
         message = {
-                "msgtype":"text",
-                "text":{
-                        "content":context
+                "msgtype":"markdown",
+                "markdown":{
+                        "title":"AutoMerge",
+                        "text":context
                 },
                 "at": {
                         "atMobiles": [
@@ -25,6 +28,20 @@ def do_message(context):
                         "isAtAll": "false"
                 }
         }
+        #text 方式
+        # message = {
+        #         "msgtype":"text",
+        #         "text":{
+        #             #"title":"AutoMergeToGdsChange",
+        #                 "content":context
+        #         },
+        #         "at": {
+        #                 "atMobiles": [
+        #                               "15601886030"
+        #                 ], 
+        #                 "isAtAll": "false"
+        #         }
+        # }
         return message
 #调用发送消息
 def send_reques(webhook):
