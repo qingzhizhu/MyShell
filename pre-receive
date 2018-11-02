@@ -51,6 +51,8 @@ function get_json_value()
 #echo "----------"
 #迭代分支，不允许提交cs文件，只能merge过去
 isIterationBr=0
+isDevelopBr=0
+isReleaseBr=0
 function process_revision ()
 {
 
@@ -58,7 +60,14 @@ function process_revision ()
   if [[ $refname == "refs/heads/feature/OnlineIteration" || $refname =~ "refs/heads/Future/" ]]; then
     isIterationBr=1
     echo "迭代分支，不允许提交cs文件，只能merge过去"
+  elif [[ $refname == "refs/heads/develop" ]]; then
+    isDevelopBr=1
+    #echo "develop 分支，Unity目录不能提交，只能merge过去"
+  elif [[ $refname =~ "refs/heads/release/" ]]; then
+    isReleaseBr=1
+    # echo "release 分支，只能提交，不能merge"
   fi
+
   json_key="id"
   author_id=`get_json_value $(curl -s $GL_HOST/api/v4/users?username=$author_name) $json_key`
 
@@ -105,7 +114,7 @@ function process_revision ()
     ##echo "组可写目录:USER_PATH=$USER_PATH"
 
     if [[ $USER_PATH == "." || $USER_PATH == "/" ]]; then
-      if [[ $isIterationBr == 0 ]]; then
+      if [[ $isIterationBr == 0 && $isDevelopBr == 0 ]]; then
         echo "you are master！can push"
         exit 0
         #test
@@ -132,15 +141,33 @@ function process_revision ()
 
   changePath=""
 
+
   for revision in ${revisions[@]}; do
     #echo "revision=$revision"
+    
 
     parent_num=$(git cat-file -p $revision | grep -c "parent")
-    echo "parent_num=$parent_num"
+    #echo "parent_num=$parent_num"
+
+    #是否已经提交过
+    isCommited=$(git branch --contains $revision)
+    #echo "isCommited=$isCommited;$revision"
+
+
 
     if [[ $parent_num == 2 ]]; then
+      if [[ $isReleaseBr == 1 ]]; then
+        msg=`git show $revision --pretty=format:"%s"`
+        if [[ $msg =~ "Merge branch 'release/2.1.28'" ]]; then
+          echo "release merge self. $revision"
+        else
+          echo "release 分支，只能提交，不能merge!"
+          exit 2
+        fi
+        
+      fi
       echo "Merge continue忽略"
-      continue
+      continue 
     elif [[ $parent_num == 0 ]]; then
       echo "new branch"
       continue
@@ -148,11 +175,15 @@ function process_revision ()
         echo "parent_num=$parent_num;what?? revision=$revision"
     fi
 
-    #是否已经提交过
-    isCommited=$(git branch --contains $revision)
-    echo "isCommited=$isCommited"
+    
     if [[ $isCommited != "" ]]; then
-      #echo "此交记录提交过"
+      #echo "此交记录提交过 $revision"
+      # if [[ $isDevelopBr == 1 ]]; then
+      #   if [[ $isCommited =~ "feature/GdsChange" ]]; then
+      #     echo "feature/GdsChange 不允许merge到develop分支！"
+      #     exit 1
+      #   fi
+      # fi
       continue
     fi
 
@@ -172,6 +203,10 @@ function process_revision ()
     if [[ $c_ad != $c_cd ]]; then
       echo "cherry-pick 忽略 $revision; ad=$c_ad; cd=$c_cd"
       isCherryPick=1
+      if [[ $isDevelopBr == 1 ]]; then
+        echo "develop 分支下不能cherry pick!"
+        exit 1
+      fi
       continue
     fi
     #是否是换皮分支，不能提交.cs 文件
@@ -179,6 +214,14 @@ function process_revision ()
       echo -e "Error: 这个分之不可以提交.cs文件!!\n$change"
       exit 1
     fi
+
+    #dev 分支不能提交，不能cherry pick
+    if [[ $isDevelopBr == 1 ]]; then
+      echo "develop 分支下不能提交！"
+      exit 1
+    fi
+
+
 
     #一次提交记录检查------
     for i in $change; do
